@@ -41,6 +41,8 @@
 #include "userosc.h"
 typedef __uint32_t uint32_t; // VSCode understanding of __uint32_t
 
+#define FOLDBACK_FREQ 5925.f // actual highest note is 5924.62Hz
+
 typedef struct State
 {
   float w0;
@@ -50,6 +52,7 @@ typedef struct State
   float harmxlvl[7];
   uint8_t harmxNum[7];
   uint8_t flags;
+  uint8_t startupCounter;
 } State;
 
 static State s_state;
@@ -66,6 +69,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
   s_state.w0 = 0.f;
   s_state.phase = 0.f;
   s_state.flags = k_flags_none;
+  s_state.startupCounter = 0;
   s_state.harmxNum[0] = 0;
   s_state.harmxNum[1] = 1;
   s_state.harmxNum[2] = 2;
@@ -92,7 +96,6 @@ void OSC_CYCLE(const user_osc_param_t *const params,
   const float w0 = s_state.w0 = osc_w0f_for_note((params->pitch) >> 8, params->pitch & 0xFF);
   const float freq = osc_notehzf((params->pitch) >> 8);
   float phase = s_state.phase;
-  const float fbFreq = 5930.f; // actual highest note is 5924.62Hz
 
   q31_t *__restrict y = (q31_t *)yn;
   const q31_t *y_e = y + frames;
@@ -105,7 +108,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
     {
       float harmx = s_state.harmxNum[i];
       float harmxLvl = s_state.harmxlvl[i];
-      if (freq * harmx * foldbackRatio > fbFreq)
+      if (freq * harmx * foldbackRatio > FOLDBACK_FREQ)
       {
         foldbackRatio *= 0.5f;
       }
@@ -139,7 +142,12 @@ void OSC_NOTEOFF(const user_osc_param_t *const params)
 
 void OSC_PARAM(uint16_t index, uint16_t value)
 {
-  const float valf = param_val_to_f32(value);
+  if (s_state.startupCounter < 30){
+    s_state.startupCounter++;
+    return;
+  }
+
+  const float valf = value * .01f;
 
   switch (index)
   {
