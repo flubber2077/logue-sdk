@@ -147,7 +147,8 @@ void OSC_PARAM(uint16_t index, uint16_t value)
     return;
   }
 
-  const float valf = value * .01f;
+  float valf = value / 8.f;
+  valf *= valf;
 
   switch (index)
   {
