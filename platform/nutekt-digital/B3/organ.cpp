@@ -156,10 +156,10 @@ void OSC_PARAM(uint16_t index, uint16_t value)
     s_state.harmxlvl[1] = valf;
     break;
   case k_user_osc_param_id2:
-    s_state.harmxlvl[2] = valf;
+    s_state.harmxlvl[3] = valf;
     break;
   case k_user_osc_param_id3:
-    s_state.harmxlvl[3] = valf;
+    s_state.harmxlvl[2] = valf;
     break;
   case k_user_osc_param_id4:
     s_state.harmxlvl[4] = valf;
