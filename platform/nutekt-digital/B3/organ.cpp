@@ -50,6 +50,8 @@ typedef struct State
   float percAmount; // positive nad negative for harm
   float percEnv;    // trending towards zero, make usre to turn off zero math
   float harmxlvl[7];
+  float clickLvl;
+  float clickTransient;
   uint8_t harmxNum[7];
   uint8_t flags;
   uint8_t startupCounter;
@@ -70,6 +72,8 @@ void OSC_INIT(uint32_t platform, uint32_t api)
   s_state.phase = 0.f;
   s_state.flags = k_flags_none;
   s_state.startupCounter = 0;
+  s_state.clickLvl = .5f;
+  s_state.clickTransient = 0.f;
   s_state.harmxNum[0] = 0;
   s_state.harmxNum[1] = 1;
   s_state.harmxNum[2] = 2;
@@ -96,6 +100,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
   const float w0 = s_state.w0 = osc_w0f_for_note((params->pitch) >> 8, params->pitch & 0xFF);
   const float freq = osc_notehzf((params->pitch) >> 8);
   float phase = s_state.phase;
+  float clickEG = s_state.clickTransient;
 
   q31_t *__restrict y = (q31_t *)yn;
   const q31_t *y_e = y + frames;
@@ -115,6 +120,9 @@ void OSC_CYCLE(const user_osc_param_t *const params,
       accumulator += osc_sinf(phase * harmx * foldbackRatio) * harmxLvl;
     }
 
+    accumulator += osc_white() * clickEG * s_state.clickLvl;
+    clickEG *= .99f;
+
     *(y) = f32_to_q31(accumulator * .23f);
 
     phase += w0; // advance phase
@@ -124,14 +132,15 @@ void OSC_CYCLE(const user_osc_param_t *const params,
       phase -= 8.f; // larger numbers have larger phase error, but prevent foldback bugs
     }
   }
-
   s_state.phase = phase;
+  s_state.clickTransient = clickEG;
 }
 
 void OSC_NOTEON(const user_osc_param_t *const params)
 {
   // perc effects
   (void)params;
+  s_state.clickTransient = 2.0f;
 }
 
 void OSC_NOTEOFF(const user_osc_param_t *const params)
@@ -142,7 +151,8 @@ void OSC_NOTEOFF(const user_osc_param_t *const params)
 
 void OSC_PARAM(uint16_t index, uint16_t value)
 {
-  if (s_state.startupCounter < 30){
+  if (s_state.startupCounter < 30)
+  {
     s_state.startupCounter++;
     return;
   }
@@ -171,7 +181,11 @@ void OSC_PARAM(uint16_t index, uint16_t value)
     break;
     break;
   case k_user_osc_param_shape:
-    break;
+  {
+    float clickf = param_val_to_f32(value);
+    s_state.clickLvl = clickf * clickf;
+  }
+  break;
   case k_user_osc_param_shiftshape:
     break;
   default:
