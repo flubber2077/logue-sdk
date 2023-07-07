@@ -76,7 +76,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
   s_state.clickLvl = .5f;
   s_state.clickEG = .5f;
   s_state.percHarmx = 6;
-  s_state.percLvl = 2.f;
+  s_state.percLvl = 1.f;
   s_state.percEG - .5f;
   s_state.harmxNum[0] = 0;
   s_state.harmxNum[1] = 1;
@@ -140,7 +140,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
       percEnv = 0.f;
     }
 
-    *(y) = f32_to_q31(accumulator * .23f);
+    *(y) = f32_to_q31(osc_sat_cubicf(accumulator * .2f));
 
     phase += w0; // advance phase
 
