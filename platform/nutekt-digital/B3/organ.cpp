@@ -134,7 +134,11 @@ void OSC_CYCLE(const user_osc_param_t *const params,
 
     accumulator += osc_white() * clickEG * clickLvl;
     clickEG *= .995f; // make these independent of samplerate. am i given samplerate?
-    percEnv *= .999f;
+    if(percEnv > 0.f){
+      percEnv -= .00001f;
+    } else if (percEnv < 0.f){
+      percEnv = 0.f;
+    }
 
     *(y) = f32_to_q31(accumulator * .23f);
 
