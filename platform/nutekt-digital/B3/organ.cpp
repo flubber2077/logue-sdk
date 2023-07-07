@@ -52,6 +52,7 @@ typedef struct State
   float clickEG;
   float percLvl;
   float percEG;
+  uint8_t percHarmx;
   uint8_t harmxNum[7];
   uint8_t flags;
   uint8_t startupCounter;
@@ -74,6 +75,7 @@ void OSC_INIT(uint32_t platform, uint32_t api)
   s_state.startupCounter = 0;
   s_state.clickLvl = .5f;
   s_state.clickEG = .5f;
+  s_state.percHarmx = 6;
   s_state.percLvl = 2.f;
   s_state.percEG - .5f;
   s_state.harmxNum[0] = 0;
@@ -106,6 +108,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
   float clickEG = s_state.clickEG;
   float percEnv = s_state.percEG;
   float percAmount = s_state.percLvl;
+  int percHarmx = s_state.percHarmx;
 
   q31_t *__restrict y = (q31_t *)yn;
   const q31_t *y_e = y + frames;
@@ -122,7 +125,7 @@ void OSC_CYCLE(const user_osc_param_t *const params,
       {
         foldbackRatio *= 0.5f;
       }
-      if (3 == currentHarmx)
+      if (percHarmx == currentHarmx)
       {
         harmxLvl += percEnv * percAmount;
       }
@@ -203,6 +206,7 @@ void OSC_PARAM(uint16_t index, uint16_t value)
   {
     float percf = param_val_to_f32(value);
     percf = (2.f * percf) - 1.f;
+    s_state.percHarmx = percf >= 0 ? 6 : 4;
     s_state.percLvl = percf * percf;
   }
   break;
